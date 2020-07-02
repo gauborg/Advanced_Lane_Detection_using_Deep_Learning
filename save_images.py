@@ -43,7 +43,7 @@ for item in file_list:
         # extract frame from the video file
         ret, frame = video.read()
         if(ret == True):
-            frame = cv2.resize(frame, None, fx = 0.75, fy = 0.75, interpolation = cv2.INTER_CUBIC)
+            frame = cv2.resize(frame, None, fx = 1.0, fy = 1.0, interpolation = cv2.INTER_CUBIC)
             # path to write images to ...
             cv2.imwrite('../data_for_lane_detection/images/' + 'image' + str(i) + '.jpg', frame)
             # increase image sequence number
