@@ -49,11 +49,11 @@ We use [**cv2.calibrateCamera()**](https://docs.opencv.org/2.4/modules/calib3d/d
 
 Here is an example of undistorted image -
 
-![image](markdown_images/test_undistortion.jpg)
+![image](readme_images/test_undistortion.jpg)
 
 We also get the perspective transform output for a chessboard image. Here is the output for drawn corners, undistorted and transformed image.
 
-![image](markdown_images/perspective_transform_output.jpg)
+![image](readme_images/perspective_transform_output.jpg)
 
 ---
 
@@ -63,7 +63,7 @@ We also get the perspective transform output for a chessboard image. Here is the
 
 We again apply above listed principles to our test images and get the undistorted images saved. Here is an example -
 
-![image](markdown_images/undistorted_straight_lines1.jpg)
+![image](readme_images/undistorted_straight_lines1.jpg)
 
 Other images can be found in the folder *output_images/test_images_undistorted*.
 
@@ -90,7 +90,7 @@ cv2.fillPoly(mask, [region], 1)
 
 Here is an example of a thresholded and masked image for test image *straight_lines1.jpg* -
 
-![image](markdown_images/masked-straight_lines1.jpg)
+![image](readme_images/masked-straight_lines1.jpg)
 
 More images are saved in the *output_images/test_images_masked* folder.
 
@@ -135,7 +135,7 @@ warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_LINEAR)
 ```
 Here is an example of a perspective transform image along with the original image. It shows us the original image along with undistorted, original warped and binary warped images.
 
-![image](markdown_images/perspective_transform_test2.jpg)
+![image](readme_images/perspective_transform_test2.jpg)
 
 Additional images of perspective transform can be found in the folder *output_images/test_images_binary_warped*. (I have included only binary perspective transformed images here.)
 
@@ -166,13 +166,13 @@ if ((leftx.size == 0) | (lefty.size == 0)):
 ```
 Here is an example image of the laneline pixels detected using the sliding boxes approach.
 
-![image](markdown_images/test2-sliding-boxes.png)
+![image](readme_images/test2-sliding-boxes.png)
 
 **6. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.**
 
 After fitting the 2nd order polynomials to both left and right lane pixels, we use the following formulae to determing the radius of curvature -
 
-![image](markdown_images/formulae.png)
+![image](readme_images/formulae.png)
 
 I implemented a separate function *measure_curvature()* which calculates the left and right lane curvatures using the above formulae. This gives us the road curvature in pixels we convert it to road curvature in meters.
 
@@ -180,7 +180,7 @@ We calculate the lane center by subtracting the x fits for the left and right la
 
 **7. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.**
 
-![image](markdown_images/test2-result.jpg)
+![image](readme_images/test2-result.jpg)
 
 ---
 ## Video Pipeline
