@@ -41,6 +41,7 @@ def saturation_select(img, thresh = (100,255)):
 
     # 2. apply threshold to saturation channel
     s_channel = img[:,:,2]
+    mpimg.imsave(('./trial_images/s-channel-test8.jpg'), s_channel)
     # 3. create empty array to store the binary output and apply threshold
     sat_image = np.zeros_like(s_channel)
     sat_image[(s_channel > thresh[0]) & (s_channel <= thresh[1])] = 1
@@ -100,8 +101,6 @@ def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
     dir_image = np.zeros_like(sobel_orient)
     dir_image[(sobel_orient >= thresh[0]) & (sobel_orient <= thresh[1])] = 1
     return dir_image
-
-
 
 # --------------------------------------------------------------------------------------------------------------------------------- #
 
@@ -173,7 +172,6 @@ def combined_threshold(img):
     ax4.set_title('X-Gradient', fontsize=20)
     
     '''
-    
     # save hls separation plots
     # plt.savefig(('./rought_work/trial_images/hls-plots-'+ i), cmap = 'gray') 
     
@@ -192,13 +190,58 @@ def combined_threshold(img):
     mpimg.imsave(('./trial_images/combined-l_AND_intensity.jpg'), combined_binary1, cmap = 'gray')
     
 
-    # saving masked images
-    mpimg.imsave(('./trial_images/masked-test8.jpg'), masked, cmap = 'gray')
     # end of saving images section, comment out above section after saving the images
-    
     
     return masked
 
+### ----------------------------------- END OF THRESHOLDING FUNCTIONS ---------------------------------------- ###
+
+
+
+
+
+### -------------------------------------- PERSPECTIVE TRANSFORM --------------------------------------------- ###
+
+# function for applying perspective view on the images
+def perspective_view(img):
+
+    img_size = (img.shape[1], img.shape[0])
+
+    # image points extracted from image approximately
+    bottom_left = [340, 825]
+    bottom_right = [1480, 825]
+    top_left = [880, 460]
+    top_right = [1040, 460]
+
+    src = np.float32([bottom_left, bottom_right, top_right, top_left])
+
+    pts = np.array([bottom_left, bottom_right, top_right, top_left], np.int32)
+    pts = pts.reshape((-1, 1, 2))
+    # create a copy of original img
+    imgpts = img.copy()
+    cv2.polylines(imgpts, [pts], True, (255, 0, 0), thickness = 3)
+
+    # choose four points in warped image so that the lines should appear as parallel
+    bottom_left_dst = [600, 1080]
+    bottom_right_dst = [1300, 1080]
+    top_left_dst = [600, 1]
+    top_right_dst = [1300, 1]
+
+    dst = np.float32([bottom_left_dst, bottom_right_dst, top_right_dst, top_left_dst])
+
+    # apply perspective transform
+    M = cv2.getPerspectiveTransform(src, dst)
+
+    # compute inverse perspective transform
+    Minv = cv2.getPerspectiveTransform(dst, src)
+
+    # warp the image using perspective transform M
+    warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_LINEAR)
+
+    return warped, M, Minv
+
+
+### ------------------------------------ END OF PERSPECTIVE TRANSFORM ---------------------------------------- ###
 
 
 
@@ -211,12 +254,24 @@ data = pickle.load(file)
 file.close()
 mtx, dst = data.values()
 
+### ---------------------------------------------------------------------------------------------------------- ###
 
-# ------------------------------------------------------------------------------------------------------------------- #
+image = mpimg.imread("./test8.jpg")
 
+# save original image
+mpimg.imsave(('./trial_images/original-test8.jpg'), image)
 
-image = mpimg.imread("../test_images/test8.jpg")
-# undistort the image
+# save original
 undist = cv2.undistort(image, mtx, dst, None, mtx)
-masked_output = combined_threshold(image)
+mpimg.imsave(('./trial_images/undistorted-masked-test8.jpg'), undist)
 
+# undistort the image
+masked_output = combined_threshold(undist)
+
+# saving masked images
+mpimg.imsave(('./trial_images/masked-test8.jpg'), masked_output, cmap = 'gray')
+
+binary_warped, M, Minv = perspective_view(masked_output)
+mpimg.imsave(('./trial_images/binary_warped-test8.jpg'), binary_warped, cmap = 'gray')
+
+### ---------------------------------------------------------------------------------------------------------- ###
