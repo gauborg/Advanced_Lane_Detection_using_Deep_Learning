@@ -27,6 +27,7 @@ error_frame = 0
 
 print(f"\nImages will be extracted from {total_videos} video files...\n")
 print("Image extraction started...\n")
+time.sleep(1.0)
 
 # create a directory with the same name and '-images' for saving images
 try:
@@ -34,13 +35,13 @@ try:
     print("Created a new folder named images ...")
 except FileExistsError:
     print("Folder with name images already exists!!!")
-    print("Warning!!! - Extracted images will be merged with the contents of the existing folder!")
+    print("Warning!!! - Extracted images will be merged with the contents of the existing folder!\n")
     pass
 
-
+time.sleep(1.0)
 for item in file_list:
 
-    print("\nWorking on file " + item + "\n")
+    print("Working on file " + item)
 
     # Opens the Video file
     # code for extracting frames starts here ...
@@ -93,7 +94,7 @@ for item in file_list:
     video.release()
     cv2.destroyAllWindows()
 
-    print(f"Extraction complete for file {item} ...\n")
+    print(f"Extraction complete for file {item} ...")
     print(f"{frames} extracted from file {item} ...\n")
     # end of for loop
 

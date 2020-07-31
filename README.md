@@ -90,7 +90,7 @@ cv2.fillPoly(mask, [region], 1)
 
 Here is an example of a thresholded and masked image for test image *straight_lines1.jpg* -
 
-![image](readme_images/masked-straight_lines1.jpg)
+![image](readme_images/masked-test1.jpg)
 
 More images are saved in the *output_images/test_images_masked* folder.
 
