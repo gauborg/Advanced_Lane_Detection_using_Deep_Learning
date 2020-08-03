@@ -1,13 +1,35 @@
-# Advanced Lane Finding
+# Advanced Lane Finding using Deep Learning
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
-![Lanes Image](./examples/example_output.jpg)
 
-### Requirements for running this project -
+![Lanes Image](./readme_images/lanes_image.jpg)
 
-1. OpenCV libraries
-2. NumPy libraries
-3. Natsort libraries
-4. Glob libraries
+The aim of this project is to develop machine learning model to identify lanelines in a highway driving scenario. We will also calculate radius of curvature and center offset of the vehicle.
+
+The steps used for developing this code are -
+
+1. Compensating for lens distortion
+2. Developing image processing pipeline
+   * Performing distortion correction for images
+   * Applying a combination of different image thresholds for identifying lanelines
+   * Isolating region of interest and create a binary image
+   * Applying perspective transform on the masked image to obtain a bird's eye view of the images
+   * Creating histogram to identify highest pixel concentration
+   * Use a sliding windows approach to capture the curvature of laneline
+   * Calculate the radius of curvature by fitting a 2nd order polynomial to pixel indices
+3. Create a .csv file that stores image information along with the polynomial indices
+4. Train the machine learning model using Keras with the .csv file as input
+5. Create training and validation sets
+6. Test the model using different video stream to check the accuracy of the model
+
+
+### Libraries required for running this project -
+
+1. [OpenCV](https://docs.opencv.org/4.4.0/)
+2. [NumPy](https://numpy.org/install/)
+3. [Natsort](https://github.com/miracle2k/python-glob2)
+4. [Glob](https://docs.python.org/3/library/glob.html)
+5. [Progressbar](https://progressbar-2.readthedocs.io/en/latest/#install) (for status visualization)
+
 
 ---
 
@@ -26,18 +48,20 @@ The goals / steps of this project are the following:
 * Warp the detected lane boundaries back onto the original image.
 * Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
-The images for camera calibration are stored in the folder called *`camera_cal`*.  The images in *`test_images`* are for testing the pipeline on single frames.
+The images for camera calibration are stored in the folder [camera_cal]('./camera_cal/'). The images in [test_images]('./test_images/') are for testing the pipeline on single frames.
 
 ---
 ## Image Pipeline
 
 ### Computing the Camera Calibration Matrix
 
-**1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.**
+**1. Performing distortion correction for images**
 
-The code for this section is in the ***pipeline_images.ipynb*** file textbox 2. Here, we execute the camera calibration matrix by providing the number of nx and ny, i.e. the number of chessboard corners in our images.
+The code for this section is in the ***[camera_calulculations.ipynb](./camera_calculations.ipynb)*** file. Here, we execute the camera calibration matrix by providing the number of nx and ny, i.e. the number of chessboard corners in our images.
 
-Camera images have a natural distortion present in them because of lense curvature. This curvature makes the images look distorted (fish-eye effect). To correct for this distortion, we perform camera calibration. We start by preparing two lists *imgpoints* and *objpoints* for storing the x and y co-ordinates of the detected corners in our chessboard images respectively. So, we will map the co-ordinates of the distorted image corners, i.e. *imgpoints* with real world undistorted corners, i.e. *objpoints*.
+Camera images have a natural distortion present in them because of lense curvature. This curvature makes the images look distorted (fish-eye effect). To correct for this distortion, we perform camera calibration. The images have been taken with the same GoPro Hero 5 camera with exactly the same settings as the ones we used for recording road driving video stream.Chessboards are often used to identify and calculate lens distortion because of their symmetric placement of constrasting black and white squares. We will also make use of inbuilt function within the OpenCV library to calculate distortion coefficients.
+
+We start by preparing two lists *imgpoints* and *objpoints* for storing the x and y co-ordinates of the detected corners in our chessboard images respectively. So, we will map the co-ordinates of the distorted image corners, i.e. *imgpoints* with real world undistorted corners, i.e. *objpoints*.
 
 We then use the We do this by using the following functions from the OpenCV library -
 
@@ -51,25 +75,21 @@ Here is an example of undistorted image -
 
 ![image](readme_images/test_undistortion.jpg)
 
-We also get the perspective transform output for a chessboard image. Here is the output for drawn corners, undistorted and transformed image.
-
-![image](readme_images/perspective_transform_output.jpg)
-
 ---
 
 ## Pipeline (for laneline test images)
 
-**2. Provide an example of a distortion-corrected image.**
+**2. Here is an example of a distortion-corrected image.**
 
 We again apply above listed principles to our test images and get the undistorted images saved. Here is an example -
 
-![image](readme_images/undistorted_straight_lines1.jpg)
+![image](readme_images/perspective_transform_output.jpg)
 
 Other images can be found in the folder *output_images/test_images_undistorted*.
 
-**3. Describe how (and identify where in your code) you used color transforms, gradients or other methods to create a thresholded binary image. Provide an example of a binary image result.**
+**3. Use of color transforms, gradients or other methods to create a thresholded binary image. Provide an example of a binary image result.**
 
-Text boxes 5 and 6 include the basic thresholding and combined function definitions respectively.
+Text boxes 3 and 4 include the basic thresholding and combined function definitions respectively.
 
 I have written separate functions for applying thresholds based on hue, lightness, separation channels and sobel gradients, magnitude and direction. In addition to these functions, I have also included a combined thresholding function which combines different thresholded images together to more robustly visualize lanelines. I implemented the color transform from RGB to HLS in the combined thresholding function and submitted the HLS formatted image as input to the individual thresholding functions.
 I combined thresholds from x-direction gradient, lightness and saturation thresholded binary images to get a combined thresholding image as shown below:
@@ -90,7 +110,7 @@ cv2.fillPoly(mask, [region], 1)
 
 Here is an example of a thresholded and masked image for test image *straight_lines1.jpg* -
 
-![image](readme_images/masked-test1.jpg)
+![image](readme_images/masked-test9.jpg)
 
 More images are saved in the *output_images/test_images_masked* folder.
 
