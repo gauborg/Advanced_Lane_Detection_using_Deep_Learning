@@ -181,21 +181,21 @@ def combined_threshold(img):
     # plt.savefig(('./rought_work/trial_images/hls-plots-'+ i), cmap = 'gray') 
     
     # save individual images for HSL plots, gradients, magnitude and direction
-    mpimg.imsave(('./trial_images/intensity-test8.jpg'), pixel_intensity_binary, cmap = 'gray')
-    mpimg.imsave(('./trial_images/gray-test8.jpg'), gray, cmap = 'gray')
-    mpimg.imsave(('./trial_images/gray-blurred-test8.jpg'), gray_blurred, cmap = 'gray')
-    mpimg.imsave(('./trial_images/l_binary-test8.jpg'), l_binary, cmap = 'gray')
-    mpimg.imsave(('./trial_images/s_binary-test8.jpg'), s_binary, cmap = 'gray')
-    mpimg.imsave(('./trial_images/gradx-test8.jpg'), gradx, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/intensity-shiny-road.jpg'), pixel_intensity_binary, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/gray-shiny-road.jpg'), gray, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/gray-blurred-shiny-road.jpg'), gray_blurred, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/l_binary-shiny-road.jpg'), l_binary, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/s_binary-shiny-road.jpg'), s_binary, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/gradx-shiny-road.jpg'), gradx, cmap = 'gray')
     
-    mpimg.imsave(('./trial_images/direction-test8.jpg'), dir_binary, cmap = 'gray')
-    mpimg.imsave(('./trial_images/sobel_img-test8.jpg'), sobel_img, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/direction-shiny-road.jpg'), dir_binary, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/sobel_img-shiny-road.jpg'), sobel_img, cmap = 'gray')
 
 
     # saving combined thresholded binary image
-    mpimg.imsave(('./trial_images/combined-l_OR_intensity.jpg'), combined_binary_l_or_intensity, cmap = 'gray')
-    mpimg.imsave(('./trial_images/combined-l_AND_intensity.jpg'), combined_binary_l_and_intensity, cmap = 'gray')
-    mpimg.imsave(('./trial_images/combined-sobel_AND_gradx.jpg'), combined_binary2, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/combined-l_OR_intensity-shiny-road.jpg'), combined_binary_l_or_intensity, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/combined-l_AND_intensity-shiny-road.jpg'), combined_binary_l_and_intensity, cmap = 'gray')
+    mpimg.imsave(('./trial_images/shiny_road_spl_case/combined-sobel_AND_gradx-shiny-road.jpg'), combined_binary2, cmap = 'gray')
 
     # end of saving images section, comment out above section after saving the images
     
@@ -280,5 +280,28 @@ mpimg.imsave(('./trial_images/masked-test8.jpg'), masked_output, cmap = 'gray')
 
 binary_warped, M, Minv = perspective_view(masked_output)
 mpimg.imsave(('./trial_images/binary_warped-test8.jpg'), binary_warped, cmap = 'gray')
+
+### ---------------------------------------------------------------------------------------------------------- ###
+
+
+### ------------------------------------ SHINY ROAD SURFACE SPECIAL CASE ------------------------------------- ###
+
+image = mpimg.imread("./test-shiny-road.jpg")
+
+# save original image
+mpimg.imsave(('./trial_images/shiny_road_spl_case/original-test-shiny-road.jpg'), image)
+
+# save original
+undist = cv2.undistort(image, mtx, dst, None, mtx)
+mpimg.imsave(('./trial_images/shiny_road_spl_case/undistorted-masked-shiny-road.jpg'), undist)
+
+# undistort the image
+masked_output = combined_threshold(undist)
+
+# saving masked images
+mpimg.imsave(('./trial_images/shiny_road_spl_case/masked-shiny-road.jpg'), masked_output, cmap = 'gray')
+
+binary_warped, M, Minv = perspective_view(masked_output)
+mpimg.imsave(('./trial_images/shiny_road_spl_case/binary_warped-shiny-road.jpg'), binary_warped, cmap = 'gray')
 
 ### ---------------------------------------------------------------------------------------------------------- ###
