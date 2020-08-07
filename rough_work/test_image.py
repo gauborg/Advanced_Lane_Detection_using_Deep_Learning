@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import glob
-import natsort
 import pickle
 
 
@@ -69,7 +68,7 @@ def abs_sobel_thresh(img, orient = 'x', sobel_kernel = 5, thresh = (0,255)):
 
 # this function accepts a RGB format image
 # function to check binary image of sobel magnitude
-def mag_sobel(img, sobel_kernel=3, thresh = (0,255)):
+def mag_sobel(img, sobel_kernel=3, thresh = (30,100)):
 
     # 1. Applying the Sobel (taking the derivative)
     sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize = sobel_kernel)
@@ -81,6 +80,7 @@ def mag_sobel(img, sobel_kernel=3, thresh = (0,255)):
     # 4. Create mask of '1's where the scaled gradient magnitude is > thresh_min and < thresh_max
     sobel_mag_image = np.zeros_like(scaled_sobel)
     sobel_mag_image[(scaled_sobel >= thresh[0]) & (scaled_sobel <= thresh[1])] = 1
+    
     return sobel_mag_image
 
 
@@ -102,7 +102,7 @@ def dir_threshold(img, sobel_kernel=3, thresh=(0, np.pi/2)):
     dir_image[(sobel_orient >= thresh[0]) & (sobel_orient <= thresh[1])] = 1
     return dir_image
 
-# --------------------------------------------------------------------------------------------------------------------------------- #
+# -------------------------------------------------------------------------------------------------- #
 
 
 
@@ -111,7 +111,7 @@ def combined_threshold(img):
 
     # convert to hls format and extract channels
     hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
-    hls = cv2.GaussianBlur(hls,(5,5),cv2.BORDER_DEFAULT)
+    hls = cv2.GaussianBlur(hls,(7,7),cv2.BORDER_DEFAULT)
     s_channel = hls[:,:,2]
 
     # convert image to grayscale
@@ -124,39 +124,44 @@ def combined_threshold(img):
 
     # get pixel intensity binary image
     # IMPORTANT: THIS FUNCION ACCEPTS GRAYSCALE IMAGES ONLY!!!
-    pixel_intensity_binary = pixel_intensity(gray, thresh = (150, 255))
+    pixel_intensity_binary = pixel_intensity(gray, thresh = (160, 255))
     
     # applying thresholding and storing different filtered images
     l_binary = lightness_select(hls, thresh = (140, 255))
     s_binary = saturation_select(hls, thresh = (100, 255))
 
-    ksize = 5
-    gradx = abs_sobel_thresh(gray_blurred, orient='x', sobel_kernel=ksize, thresh=(20, 100))
-    gradx_s_channel = abs_sobel_thresh(s_channel, orient='x', sobel_kernel=ksize, thresh=(20, 100))
+    ksize = 7
+    gradx = abs_sobel_thresh(gray_blurred, orient='x', sobel_kernel=ksize, thresh=(25, 100))
     # assuming lanelines are always at an angle between 30 and 45 degree to horizontal
-    dir_binary = dir_threshold(gray_blurred, sobel_kernel=ksize, thresh=(0.55, 0.7))
+    dir_binary = dir_threshold(gray_blurred, sobel_kernel=ksize, thresh=(0.55, 0.72))
+
+    sobel_img = mag_sobel(gray, 3, (25, 100))
 
 
     # ---------------------------- FUNCTION CALLS FOR THRESHOLDING END ------------------------------ #
 
 
     # creating an empty binary image
-    combined_binary = np.zeros_like(s_binary)
-    combined_binary[((pixel_intensity_binary == 1) | (l_binary == 1))] = 1
+    combined_binary_l_or_intensity = np.zeros_like(s_binary)
+    combined_binary_l_or_intensity[((pixel_intensity_binary == 1) | (l_binary == 1))] = 1
 
-    combined_binary1 = np.zeros_like(s_binary)
-    combined_binary1[((pixel_intensity_binary == 1) & (l_binary == 1))] = 1
+    combined_binary_l_and_intensity = np.zeros_like(s_binary)
+    combined_binary_l_and_intensity[((pixel_intensity_binary == 1) & (l_binary == 1))] = 1
+
+    # combined binary from X gradient, Saturation and Lightness
+    combined_binary2 = np.zeros_like(gradx)
+    combined_binary2[((sobel_img == 1) & (gradx == 1))] = 1
 
     # apply region of interest mask
-    height, width = combined_binary.shape
-    mask = np.zeros_like(combined_binary)
+    height, width = combined_binary_l_or_intensity.shape
+    mask = np.zeros_like(combined_binary_l_or_intensity)
     
     # define the region as 
     region = np.array([[0, height-1], [840, 400], [1080, 400], [width-1, height-1]], dtype=np.int32)
     # print(region)
     cv2.fillPoly(mask, [region], 1)
 
-    masked = cv2.bitwise_and(combined_binary, mask)
+    masked = cv2.bitwise_and(combined_binary_l_or_intensity, mask)
     
     # This section is only for saving the separated hls plots.
     # This is commented out after running it once...
@@ -182,13 +187,15 @@ def combined_threshold(img):
     mpimg.imsave(('./trial_images/l_binary-test8.jpg'), l_binary, cmap = 'gray')
     mpimg.imsave(('./trial_images/s_binary-test8.jpg'), s_binary, cmap = 'gray')
     mpimg.imsave(('./trial_images/gradx-test8.jpg'), gradx, cmap = 'gray')
-    mpimg.imsave(('./trial_images/gradx_s_channel-test8.jpg'), gradx_s_channel, cmap = 'gray')
+    
     mpimg.imsave(('./trial_images/direction-test8.jpg'), dir_binary, cmap = 'gray')
+    mpimg.imsave(('./trial_images/sobel_img-test8.jpg'), sobel_img, cmap = 'gray')
+
 
     # saving combined thresholded binary image
-    mpimg.imsave(('./trial_images/combined-l_OR_intensity.jpg'), combined_binary, cmap = 'gray')
-    mpimg.imsave(('./trial_images/combined-l_AND_intensity.jpg'), combined_binary1, cmap = 'gray')
-    
+    mpimg.imsave(('./trial_images/combined-l_OR_intensity.jpg'), combined_binary_l_or_intensity, cmap = 'gray')
+    mpimg.imsave(('./trial_images/combined-l_AND_intensity.jpg'), combined_binary_l_and_intensity, cmap = 'gray')
+    mpimg.imsave(('./trial_images/combined-sobel_AND_gradx.jpg'), combined_binary2, cmap = 'gray')
 
     # end of saving images section, comment out above section after saving the images
     
@@ -210,8 +217,8 @@ def perspective_view(img):
     # image points extracted from image approximately
     bottom_left = [340, 825]
     bottom_right = [1480, 825]
-    top_left = [880, 460]
-    top_right = [1040, 460]
+    top_left = [895, 445]
+    top_right = [1028, 445]
 
     src = np.float32([bottom_left, bottom_right, top_right, top_left])
 
