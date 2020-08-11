@@ -1,7 +1,7 @@
 # Advanced Lane Finding using Deep Learning
 [![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-![Lanes Image](./readme_images/lanes_image.jpg)
+![Lanes Image](./readme_images/lanelines.gif)
 
 The aim of this project is to develop machine learning model to identify lanelines in a highway driving scenario. We will also calculate radius of curvature and center offset of the vehicle.
 
@@ -22,6 +22,19 @@ The steps used for developing this code are -
 6. Test the model using different video stream to check the accuracy of the model
 
 
+## Folder Structure Details
+
+| **File Name** | **Details** |
+| :--- | :--- |
+| [camera_calculations.ipynb](./camera_calculations.ipynb) | Jupyter Notebook containing pipeline followed for camera calibration |
+| [pipeline_images.ipynb](./pipeline_images.ipynb) | Jupyter Notebook containing pipeline followed for identifying images using OpenCV functions
+| [video_pipeline.ipynb](./video_pipeline.ipynb) | Code to extract and save image data and lane |parameters |
+| [train_cnn.ipynb](./train_cnn.ipynb) | File used for training the model |
+| [class_lanelines_1.py](./class_lanelines_1.py) | Python file detecting and storing lanelines information |
+| [camera_cal](./camera_cal/) and [camera_cal_outputs](./camera_cal_outputs/) | Directories storing original chessboard images and undistorted chessboard images |
+| [pickle](./pickle/) | Pickle file storing camera calibration matrices for undistorting images |
+
+
 ### Libraries required for running this project -
 
 1. [OpenCV](https://docs.opencv.org/4.4.0/)
@@ -35,7 +48,7 @@ The steps used for developing this code are -
 
 ## Problem Statement
 
-Using computer vision principles and OpenCV library functions, develop a robust algorithm to identify and draw lanelines in a given video stream.
+Using computer vision principles and OpenCV library functions, to develop a robust algorithm to identify and draw lanelines in a given video stream.
 
 The goals / steps of this project are the following:
 
@@ -87,15 +100,15 @@ We again apply above listed principles to our test images and get the undistorte
 
 Other images can be found in the folder *output_images/test_images_undistorted*.
 
-**3. Use of color transforms, gradients or other methods to create a thresholded binary image. Provide an example of a binary image result.**
+**3. Use of color transforms, gradients or other methods to create a thresholded binary image.**
 
 Text boxes 3 and 4 include the basic thresholding and combined function definitions respectively.
 
 I have written separate functions for applying thresholds based on hue, lightness, separation channels and sobel gradients, magnitude and direction. In addition to these functions, I have also included a combined thresholding function which combines different thresholded images together to more robustly visualize lanelines. I implemented the color transform from RGB to HLS in the combined thresholding function and submitted the HLS formatted image as input to the individual thresholding functions.
-I combined thresholds from x-direction gradient, lightness and saturation thresholded binary images to get a combined thresholding image as shown below:
+Finally, I decided to use a combination of pixel intensity thresholded and lightness thresholded binary images as this combination seems to detect laneline pixels in most of the daylight situations:
 
 ```python
-combined_binary[((l_binary == 1) & (s_binary == 1)) & ((gradx == 1) | (s_binary == 1))] = 1
+combined_l_or_intensity[((pixel_intensity_binary == 1) | (l_binary == 1))] = 1
 ```
 I also applied region of interest mask to isolate only the bottom region of the image where the lanelines are always located. Here is the code for the same -
 
@@ -112,13 +125,12 @@ Here is an example of a thresholded and masked image for test image *straight_li
 
 ![image](readme_images/masked-test9.jpg)
 
-More images are saved in the *output_images/test_images_masked* folder.
+More saved images can be found in the [*test_images_output/thresholded_masked*](./test_images_output/thresholded_masked/) folder.
 
 
-**4. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.**
+**4. How the perspective transform was applied and provide an example of a transformed image.**
 
-We define a function *perspective_view* in textbox 7 which takes as input our thresholded binary image. This function applies a perspective transform on the image. This gives us a bird's eye view of road so that the lanelines appear from the top and parallel. We select the endpoints of the laneline from a image approximately as the *src* points. We specify some destination *dst* points in the warped image so that our laneline will appear as parallel.
-
+We define a function *perspective_view* in textbox 5 which takes as input our thresholded binary image. This function applies a perspective transform on the image. This gives us a bird's eye view of road so that the lanelines appear from the top and parallel. We select the endpoints of the laneline from a image approximately as the *src* points. We specify some destination *dst* points in the warped image so that our laneline will appear as parallel.
 
 
 After this, we use the function [cv2.perspectiveTransform()](https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#getperspectivetransform) from OpenCV library by providing *src* and *dst* points as the inputs. This function calculates the 3*3 transformation matrix. We use this transformation matrix in a function called [cv2.warpPerspective()](https://docs.opencv.org/2.4/modules/imgproc/doc/geometric_transformations.html#warpperspective) to get the warped (transformed iamge) of our lanelines.
@@ -127,39 +139,40 @@ Here is the code I used in the *perspective_view()* function -
 
 ```python
 # image points extracted from image approximately
-bottom_left = [210, 720]
-bottom_right = [1100, 720]
-top_left = [570, 470]
-top_right = [720, 470]
+bottom_left = [373, 825]
+bottom_right = [1460, 825]
+top_left = [880, 460]
+top_right = [1038, 460]
+
 src = np.float32([bottom_left, bottom_right, top_right, top_left])
 
 pts = np.array([bottom_left, bottom_right, top_right, top_left], np.int32)
 pts = pts.reshape((-1, 1, 2))
-# create a copy of original img
-imgpts = img.copy()
-cv2.polylines(imgpts, [pts], True, (255, 0, 0), thickness=3)
 
 # choose four points in warped image so that the lines should appear as parallel
-bottom_left_dst = [320, 720]
-bottom_right_dst = [920, 720]
-top_left_dst = [320, 1]
-top_right_dst = [920, 1]
+bottom_left_dst = [600, 1080]
+bottom_right_dst = [1300, 1080]
+top_left_dst = [600, 1]
+top_right_dst = [1300, 1]
 
 dst = np.float32([bottom_left_dst, bottom_right_dst, top_right_dst, top_left_dst])
+
 # apply perspective transform
 M = cv2.getPerspectiveTransform(src, dst)
+
 # compute inverse perspective transform
 Minv = cv2.getPerspectiveTransform(dst, src)
+
 # warp the image using perspective transform M
 warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_LINEAR)
 ```
 Here is an example of a perspective transform image along with the original image. It shows us the original image along with undistorted, original warped and binary warped images.
 
-![image](readme_images/perspective_transform_test2.jpg)
+![image](readme_images/perspective_tranform.jpg)
 
-Additional images of perspective transform can be found in the folder *output_images/test_images_binary_warped*. (I have included only binary perspective transformed images here.)
+Additional images of perspective transform can be found in the folder [output_images/test_images_binary_warped](./output_images/test_images_binary_warped/). (I have included only binary perspective transformed images here.)
 
-**5. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?**
+**5. Description of how the lanelines pixels were identified and fit their positions with a polynomial**
 
 I have defined a class named *LaneLines* in a separate file *class_lanelines.py* which stores different parameters of detected such as x,y co-ordinates.
 
@@ -186,7 +199,7 @@ if ((leftx.size == 0) | (lefty.size == 0)):
 ```
 Here is an example image of the laneline pixels detected using the sliding boxes approach.
 
-![image](readme_images/test2-sliding-boxes.png)
+![image](readme_images/sliding-boxes-example.jpg)
 
 **6. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.**
 
@@ -198,24 +211,32 @@ I implemented a separate function *measure_curvature()* which calculates the lef
 
 We calculate the lane center by subtracting the x fits for the left and right lanelines. In the next step, we calculate the center offset of the vehicle by subtracting the lane center from image center. This gives us the value of center offset in pixels. We use our pixels per meter value to convert this value from pixels to meters.
 
-**7. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.**
+**7. Example image of result plotted back down onto the road showing the identified lane area clearly.**
 
-![image](readme_images/test2-result.jpg)
+![image](readme_images/detected_lane_image.jpg)
 
 ---
 ## Video Pipeline
 
-**Provide a link to your final video output. Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!)**
+The video pipeline is given in the ***video_pipeline.ipynb*** notebook. The code in this notebook is the manual way of extracting lanelines using OpenCV functions. It uses almost the same pipeline as images. Only certain commands for plotting images have been commented out to run for video. Here is a link to a small 15 second video clip showing the marked lanelines.
 
-The video pipeline is given in the ***video_lanelines.ipynb*** notebook. It uses almost the same pipeline as images. Only certain commands for plotting images have been commented out to run for video.
-
-### [Link to the output video](videos_output)
+### [test video](./test-video-output.mp4)
 
 ---
 
+# NEURAL NETWORK IMPLEMENTATION
+
+---
+
+
+
+
+
+
+
 ## Discussion and Conclusion
 
-**Briefly discuss any problems / issues you faced in your implementation of this project. Where will your pipeline likely fail? What could you do to make it more robust?**
+**Where is the current approach mpst likely to fail? Possible improvements to make it more robust?**
 
 ### Problems/Issues faced during implementation:
 
