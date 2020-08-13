@@ -21,6 +21,7 @@ The steps used for developing this code are -
 5. Create training and validation sets
 6. Test the model using different video stream to check the accuracy of the model
 
+---
 
 ## Folder Structure Details
 
@@ -31,8 +32,11 @@ The steps used for developing this code are -
 | [video_pipeline.ipynb](./video_pipeline.ipynb) | Code to extract and save image data and lane |parameters |
 | [train_cnn.ipynb](./train_cnn.ipynb) | File used for training the model |
 | [class_lanelines_1.py](./class_lanelines_1.py) | Python file detecting and storing lanelines information |
-| [camera_cal](./camera_cal/) and [camera_cal_outputs](./camera_cal_outputs/) | Directories storing original chessboard images and undistorted chessboard images |
+| [camera_cal](./camera_cal/) and [camera_cal_outputs](./camera_cal_outputs/) | Directories for original chessboard images and undistorted chessboard images |
 | [pickle](./pickle/) | Pickle file storing camera calibration matrices for undistorting images |
+| [test_images](./test_images/) and [test_images_output](./test_images_output/) | Directories for test images and thresholded output images |
+| [model.h5](./model.h5) - containing a trained convolution neural network |
+| [data for lane detection](../data_for_lane_detection/) | This directory is one level up of all our notebook and is used to store input video streams, transformed and thresholded images, neural network training data and some other information |
 
 
 ### Libraries required for running this project -
@@ -43,12 +47,11 @@ The steps used for developing this code are -
 4. [Glob](https://docs.python.org/3/library/glob.html)
 5. [Progressbar](https://progressbar-2.readthedocs.io/en/latest/#install) (for status visualization)
 
-
 ---
 
 ## Problem Statement
 
-Using computer vision principles and OpenCV library functions, to develop a robust algorithm to identify and draw lanelines in a given video stream.
+<span style="font-family:Calibri; font-size:1.5em;">**Using Deep Learning and Convolutional Neural Networks to develop a robust algorithm to identify and draw lanelines in a given video stream.**</span>
 
 The goals / steps of this project are the following:
 
@@ -226,7 +229,28 @@ The video pipeline is given in the ***video_pipeline.ipynb*** notebook. The code
 
 # NEURAL NETWORK IMPLEMENTATION
 
+## 1. How is the data collected?
+
+The videos are recorded using a GoPro Hero 5 camera with medium-wide field of view to capture road. Multiple video files were recorded at 48 fps and later resized to 30 fps. These files are saved in the folder 
+
+Now, we will use a Convolutional Neural Network (CNN) to calculate lane parameters using previously collected image and corresponding lane polynomial data. The convolutional neural network will work on a .csv file containing this data and we will train, validate and test a model using Keras. The model will output the left and right lane parameters which we will use to run on a video stream (series of images) to detect lanelines.
+
+For collecting data for the neural network, we have created a separate jupyter notebook [save_training_data.ipynb](./save_training_data.ipynb). This file will run on a set of videos that you we want to train the model on. Using this notebook, we run the traditional approach of detecting lanelines using our video pipeline OpenCV functions and save the lane parameters and image data.
+
+This file saves the data in the following format -
+| 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| Binary Image File | Laneline Image File | Perspective Transformed Image | Left Laneline A | Left Laneline B | Left Laneline C | Left Laneline A | Left Laneline B | Left Laneline C |
+
 ---
+
+## 2. Model Architecture and Training Strategy
+
+This is a particularly difficult and more of a trial and error task since there are a lot of hyperparameters that can always be further tuned to achieve more accurate results.
+
+
+
+
 
 
 
