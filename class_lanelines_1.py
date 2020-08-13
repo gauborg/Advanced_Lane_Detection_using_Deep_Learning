@@ -41,11 +41,11 @@ class LaneLines():
         
         # HYPERPARAMETERS
         # Choose the number of sliding windows
-        nwindows = 15
+        nwindows = 18
         # Set the width of the windows +/- margin
-        margin = 80
+        margin = 100
         # Set minimum number of pixels found to recenter window
-        minpix = 40
+        minpix = 50
 
         # Set height of windows - based on nwindows above and image shape
         window_height = np.int(self.binary_warped.shape[0]//nwindows)
@@ -211,7 +211,7 @@ class LaneLines():
             # left intercept value
 
             # this means that the detected line is really bad and we compute the average of past fits
-            if ((self.right_fit[2] < self.left_fit[2]) or (abs(self.right_fit[2]-self.left_fit[2]) > 700 )):
+            if ((self.right_fit[2] < self.left_fit[2]) or (abs(self.right_fit[2]-self.left_fit[2]) > 750 )):
                 
                 # calculate offset intercept
                 right = np.add(0.5*self.avg_left_fit, 0.5*self.left_fit)
