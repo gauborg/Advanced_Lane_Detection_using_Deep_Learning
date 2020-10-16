@@ -36,7 +36,7 @@ def lightness_select(img, thresh = (120,255)):
 
 
 # this function accepts a HLS format image
-def saturation_select(img, thresh = (100,255)):
+def saturation_select(img, thresh = (175,255)):
 
     # 2. apply threshold to saturation channel
     s_channel = img[:,:,2]
@@ -131,7 +131,7 @@ def combined_threshold(img):
     s_binary = saturation_select(hls, thresh = (100, 255))
 
     ksize = 7
-    gradx = abs_sobel_thresh(gray_blurred, orient='x', sobel_kernel=ksize, thresh=(25, 100))
+    gradx = abs_sobel_thresh(gray_blurred, orient='x', sobel_kernel=ksize, thresh=(30, 150))
     # assuming lanelines are always at an angle between 30 and 45 degree to horizontal
     dir_binary = dir_threshold(gray_blurred, sobel_kernel=ksize, thresh=(0.55, 0.72))
 
