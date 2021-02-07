@@ -20,10 +20,10 @@ class LaneLines():
         # creating the array for binary
         self.ploty = np.linspace(0, self.binary_warped.shape[0]-1, self.binary_warped.shape[0])
         # no of windows
-        # previous left and right fits which worked
+        # previous left and right fits
         self.left_fit = prev_left_fit
         self.right_fit = prev_right_fit
-        # average of past 10 fits
+        # average of past 5 fits
         self.avg_left_fit = prev_avg_left_fit
         self.avg_right_fit = prev_avg_right_fit
 
@@ -33,10 +33,9 @@ class LaneLines():
     def find_lane_pixels(self):
 
         out_img = np.dstack((self.binary_warped, self.binary_warped, self.binary_warped))
-
         if (self.detected):
             out_img, self.left_fit, self.right_fit = self.search_from_prior()
-            # print("Search from prior from find_pixels executed!")
+            # print("Search from prior executed!")
         else:
             out_img, self.left_fit, self.right_fit = self.sliding_windows()
             self.detected = True
@@ -62,9 +61,9 @@ class LaneLines():
         
         # HYPERPARAMETERS
         # Choose the number of sliding windows
-        nwindows = 15
+        nwindows = 30
         # Set the width of the windows +/- margin
-        margin = 120
+        margin = 80
         # Set minimum number of pixels found to recenter window
         minpix = 20
 
@@ -149,15 +148,16 @@ class LaneLines():
         ################################### FOR BAD LANELINES ########################################
 
         # if bad lanelines are detected
-        if (leftx.size == 0 and rightx.size == 0):
+        if (leftx.size < 40 and rightx.size < 40):
             # bad lines are detected, lets commpute weighted average of previous estimates
-            self.left_fit = self.avg_left_fit
-            self.right_fit = self.avg_right_fit
+            curr_left_fit = 0.5*np.add(self.left_fit, self.avg_left_fit)
+            curr_right_fit = 0.5*np.add(self.right_fit, self.avg_right_fit)
         
         # if the number of total pixels detected is less than 50
         # this makes the calculations less accurate and hence we use
         # 90 % of the previous left fit average and 10% of the current
-        elif ((leftx.size == 0) or (lefty.size == 0)):
+
+        elif ((leftx.size < 40) or (lefty.size < 40)):
             '''
             if left laneline is not detected, we use average right fit of previous frames...
             since lanewidth is 3.7 meters, and 3.7 meters = 700 pixels in our image
@@ -174,10 +174,12 @@ class LaneLines():
             # gather previous estimates for left laneline
             prev_avg_left = self.avg_left_fit
 
-            self.left_fit = np.add(0.5*offset_l_fit, 0.5*prev_avg_left)
-            self.right_fit = np.polyfit(righty, rightx, 2)
+            curr_left_fit = offset_l_fit
+            curr_left_fit = 0.5*(np.add(offset_l_fit, prev_avg_left))
+            curr_right_fit = np.polyfit(righty, rightx, 2)
+
                    
-        elif ((rightx.size == 0) or (righty.size == 0)):
+        elif ((rightx.size < 40) or (righty.size < 40)):
             '''
             if right laneline is not detected, we use average right fit of previous frames...
             since lanewidth is 3.7 meters, and 3.7 meters = 700 pixels in our image
@@ -190,29 +192,35 @@ class LaneLines():
             # gather previous estimates for right laneline
             prev_avg_right = self.avg_right_fit
 
-            self.right_fit = np.add(0.5*offset_r_fit, 0.5*prev_avg_right)
-            try:
-                self.left_fit = np.add(lefty, leftx, 2)
-            except TypeError:
-                pass
+            curr_right_fit = offset_r_fit
+            curr_right_fit = np.add(0.5*offset_r_fit, 0.5*prev_avg_right)
+            curr_left_fit = np.polyfit(leftx, lefty, 2)
 
         # when a good number of pixels are detected and lines can be fit
         else:
             # if lanelines pixels are found, we use current values of lefty, leftx, righty, rightx to calculate our latest laneline equations...
-            self.left_fit = np.polyfit(lefty, leftx, 2)
-            self.right_fit = np.polyfit(righty, rightx, 2)
+            curr_left_fit = np.polyfit(lefty, leftx, 2)
+            curr_right_fit = np.polyfit(righty, rightx, 2)
             '''
-            check if the right lane value is less than left intercept value
+            check if the right lane value is less than left intercept value ...
             if yes, then update the right intercept by adding 700 to the 
             left intercept value
             '''
             # this means that the detected line is really bad and we compute the average of past fits
-            if ((self.right_fit[2] < self.left_fit[2]) or (abs(self.right_fit[2]-self.left_fit[2]) > 750 )):
-                
+            if ((curr_right_fit[2] < curr_left_fit[2]) or (abs(curr_right_fit[2]-curr_left_fit[2]) > 740)):        
                 # calculate offset intercept
-                right = np.add(0.5*self.avg_left_fit, 0.5*self.left_fit)
-                right[2] = 700 + self.avg_left_fit[2]
-
+                # special case for first frame when the previous average is not available
+                if (len(self.avg_left_fit) == 0):
+                    curr_right_fit = curr_left_fit
+                    curr_right_fit[2] = 700 + curr_left_fit[2]
+                else:
+                    curr_right_fit = (0.5)*np.add(self.avg_left_fit, curr_left_fit)
+                    curr_right_fit[2] = 700 + self.avg_left_fit[2]
+        
+        # Assign the current calculated values to left and right fits
+        self.left_fit = curr_left_fit
+        self.right_fit = curr_right_fit
+        
         # Generate x and y values for plotting
         try:
             self.left_fitx = self.left_fit[0]*self.ploty**2 + self.left_fit[1]*self.ploty + self.left_fit[2]
@@ -226,8 +234,8 @@ class LaneLines():
         ##### Visualization  #####
         ### THIS VISUALIZATION HELPS IN 
         # Colors in the left and right lane regions
-        out_img[lefty, leftx] = [255, 0, 0]
-        out_img[righty, rightx] = [0, 0, 255]
+        out_img[lefty, leftx] = [255,0,0]
+        out_img[righty, rightx] = [0,0,255]
         
         return out_img, self.left_fit, self.right_fit
 
@@ -236,6 +244,9 @@ class LaneLines():
     # for searching from a prior region
     def search_from_prior(self):
 
+        # parameter that checks whether sliding boxes function was called from this function
+        sliding_windows_called = False
+        
         out_img = np.dstack((self.binary_warped, self.binary_warped, self.binary_warped))
 
         # HYPERPARAMETER
@@ -260,57 +271,71 @@ class LaneLines():
         rightx = nonzerox[right_lane_inds]
         righty = nonzeroy[right_lane_inds]
 
-
         # check if the arrays are empty, i.e. no pixels are detected
-        if ((leftx.size == 0) | (lefty.size == 0)):
-            detection_in_current = False
-        elif ((rightx.size == 0) | (righty.size == 0)):
-            detection_in_current = False
+        if ((leftx.size < 40) | (lefty.size < 40)):
+            detection_using_prior_search = False
+        elif ((rightx.size < 40) | (righty.size < 40)):
+            detection_using_prior_search = False
         else:
-            detection_in_current = True
+            # evaluate the lane fits and see if there are any irregularities
+            check_left_fit = np.polyfit(lefty, leftx, 2)
+            check_right_fit = np.polyfit(righty, rightx, 2)
+            # we check if the left and right fit intercepts are within accepted value not exceeding 750
+            if(((check_right_fit[2] - check_left_fit[2]) > 730) or (check_right_fit[2] < check_left_fit[2])):
+                # we assign the detection as false so that sliding windows will be executed
+                detection_using_prior_search = False
+            else:
+                detection_using_prior_search = True
         
-        # if above condition is true, then we calculate lanelines based on above x and y, else we execute function sliding widows
-        if (detection_in_current):            
+        # if above condition is true, then we calculate lanelines based on above x and y, else we execute function sliding windows
+        if (detection_using_prior_search):
             # calculate current fits if lanelines are detected
-            self.left_fit = np.polyfit(lefty, leftx, 2)
-            self.right_fit = np.polyfit(righty, rightx, 2)
+            curr_left_fit = np.polyfit(lefty, leftx, 2)
+            curr_right_fit = np.polyfit(righty, rightx, 2)
+
             try:
                 self.left_fitx = self.left_fit[0]*self.ploty**2 + self.left_fit[1]*self.ploty + self.left_fit[2]
                 self.right_fitx = self.right_fit[0]*self.ploty**2 + self.right_fit[1]*self.ploty + self.right_fit[2]
             except IndexError:
                 # Avoids an error if `left` and `right_fit` are still none or incorrect
                 print('The function failed to fit a line!')
+                self.left_fit = curr_left_fit
+                self.right_fit = curr_right_fit
         else:
             # if no lanelines are found using search from prior option, use sliding windows functionality
-            # print("sliding windows was called from search prior...")
+            # print("Sliding windows was called from search prior function ...")
             out_img, self.left_fit, self.right_fit = self.sliding_windows()
+            sliding_windows_called = True
         
-        
-        ## Visualization ##
-        # Colors in the left and right lane regions
-        out_img = np.dstack((self.binary_warped, self.binary_warped, self.binary_warped))*255
-        window_img = np.zeros_like(out_img)
-        # Color in left and right line pixels
-        out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
-        out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
+        if (detection_using_prior_search):
+            ## Visualization ##
+            # Colors in the left and right lane regions
+            out_img = np.dstack((self.binary_warped, self.binary_warped, self.binary_warped))*255
+            window_img = np.zeros_like(out_img)
+            # Color in left and right line pixels
+            out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
+            out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
 
-        # Generate a polygon to illustrate the search window area
-        # And recast the x and y points into usable format for cv2.fillPoly()
-        left_line_window1 = np.array([np.transpose(np.vstack([self.left_fitx-search_margin, self.ploty]))])
-        left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.left_fitx+search_margin, 
-                                self.ploty])))])
-        left_line_pts = np.hstack((left_line_window1, left_line_window2))
-        right_line_window1 = np.array([np.transpose(np.vstack([self.right_fitx-search_margin, self.ploty]))])
-        right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.right_fitx+search_margin, 
-                                self.ploty])))])
-        right_line_pts = np.hstack((right_line_window1, right_line_window2))
+            # Generate a polygon to illustrate the search window area
+            # And recast the x and y points into usable format for cv2.fillPoly()
+            left_line_window1 = np.array([np.transpose(np.vstack([self.left_fitx-search_margin, self.ploty]))])
+            left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.left_fitx+search_margin, 
+                                    self.ploty])))])
+            left_line_pts = np.hstack((left_line_window1, left_line_window2))
+            right_line_window1 = np.array([np.transpose(np.vstack([self.right_fitx-search_margin, self.ploty]))])
+            right_line_window2 = np.array([np.flipud(np.transpose(np.vstack([self.right_fitx+search_margin, 
+                                    self.ploty])))])
+            right_line_pts = np.hstack((right_line_window1, right_line_window2))
 
-        cv2.fillPoly(window_img, np.int_([left_line_pts]), (0,255, 0))
-        cv2.fillPoly(window_img, np.int_([right_line_pts]), (0,255, 0))
-        out_img = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
+            cv2.fillPoly(window_img, np.int_([left_line_pts]), (0,255,0))
+            cv2.fillPoly(window_img, np.int_([right_line_pts]), (0,255,0))
+            out_img = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
 
-        self.detected = detection_in_current
-
+            if (sliding_windows_called):
+                self.detected = True
+            else:
+                self.detected = False
+                
         return out_img, self.left_fit, self.right_fit
 
 
